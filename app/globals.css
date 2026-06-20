@@ -132,12 +132,14 @@ body {
 @media (max-aspect-ratio: 16 / 9) {
   .hero-video { width: 177.78vh; height: 100vh; }
 }
-/* Mobile: rotate the video 90° to fill the portrait screen vertically. */
+/* Mobile: rotate the video 90° to fill the portrait screen vertically.
+   Swapping the viewport units makes the rotated result equal the viewport,
+   and object-fit: cover fills any aspect difference. */
 @media (max-width: 767px) {
   .hero-video {
+    width: 100vh;
+    height: 100vw;
     transform: translate(-50%, -50%) rotate(90deg);
-    width: max(100vh, 177.78vw);
-    height: max(56.25vh, 100vw);
   }
 }
 
