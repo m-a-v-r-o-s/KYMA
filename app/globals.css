@@ -1,0 +1,149 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+body {
+  background-color: #fcfcfa;
+  color: #20242a;
+  -webkit-font-smoothing: antialiased;
+}
+
+.eyebrow {
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #2c6e8f;
+}
+
+/* Signature: thin horizon line */
+.horizon {
+  display: block;
+  width: 64px;
+  height: 0;
+  border-top: 1px solid #c9a24b;
+}
+
+/* Mosaic tessera accent — a short row of square tiles, inspired by the
+   charcoal-on-cream Greek mosaic. Each section gets its own tile sequence so
+   no two are identical. Tile colours: charcoal #2b2823, beige #b9a981,
+   light-beige #cdbf9a, on a cream grout. */
+.tessera {
+  display: block;
+  height: 7px;
+  width: 80px;
+  border-radius: 1px;
+  background-color: #e7dfca; /* cream grout */
+}
+
+/* All accents share the same fine 6px tile style; only the colour order
+   varies per section. c = charcoal #2b2823, b = beige #b9a981, l = light #cdbf9a */
+.tessera-villa {
+  background-image: repeating-linear-gradient(90deg,
+    #2b2823 0 6px, transparent 6px 8px,
+    #2b2823 8px 14px, transparent 14px 16px,
+    #b9a981 16px 22px, transparent 22px 24px,
+    #2b2823 24px 30px, transparent 30px 32px,
+    #cdbf9a 32px 38px, transparent 38px 40px,
+    #2b2823 40px 46px, transparent 46px 48px);
+}
+.tessera-area {
+  background-image: repeating-linear-gradient(90deg,
+    #b9a981 0 6px, transparent 6px 8px,
+    #2b2823 8px 14px, transparent 14px 16px,
+    #cdbf9a 16px 22px, transparent 22px 24px,
+    #2b2823 24px 30px, transparent 30px 32px,
+    #b9a981 32px 38px, transparent 38px 40px,
+    #2b2823 40px 46px, transparent 46px 48px);
+}
+.tessera-exp {
+  background-image: repeating-linear-gradient(90deg,
+    #2b2823 0 6px, transparent 6px 8px,
+    #2b2823 8px 14px, transparent 14px 16px,
+    #b9a981 16px 22px, transparent 22px 24px,
+    #cdbf9a 24px 30px, transparent 30px 32px,
+    #2b2823 32px 38px, transparent 38px 40px,
+    #b9a981 40px 46px, transparent 46px 48px);
+}
+.tessera-amen {
+  background-image: repeating-linear-gradient(90deg,
+    #cdbf9a 0 6px, transparent 6px 8px,
+    #2b2823 8px 14px, transparent 14px 16px,
+    #b9a981 16px 22px, transparent 22px 24px,
+    #2b2823 24px 30px, transparent 30px 32px,
+    #2b2823 32px 38px, transparent 38px 40px,
+    #cdbf9a 40px 46px, transparent 46px 48px);
+}
+.tessera-book {
+  background-image: repeating-linear-gradient(90deg,
+    #2b2823 0 6px, transparent 6px 8px,
+    #b9a981 8px 14px, transparent 14px 16px,
+    #2b2823 16px 22px, transparent 22px 24px,
+    #cdbf9a 24px 30px, transparent 30px 32px,
+    #2b2823 32px 38px, transparent 38px 40px,
+    #b9a981 40px 46px, transparent 46px 48px);
+}
+.tessera-reviews {
+  background-image: repeating-linear-gradient(90deg,
+    #b9a981 0 6px, transparent 6px 8px,
+    #cdbf9a 8px 14px, transparent 14px 16px,
+    #2b2823 16px 22px, transparent 22px 24px,
+    #b9a981 24px 30px, transparent 30px 32px,
+    #2b2823 32px 38px, transparent 38px 40px,
+    #cdbf9a 40px 46px, transparent 46px 48px);
+}
+
+/* Hero background video — scaled to cover the hero, clicks pass through. */
+.hero-video {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100vw;
+  height: 100vh;
+  border: 0;
+  object-fit: cover;
+  pointer-events: none;
+}
+/* Desktop / landscape: keep 16:9 and cover the viewport. */
+@media (min-aspect-ratio: 16 / 9) {
+  .hero-video { width: 100vw; height: 56.25vw; }
+}
+@media (max-aspect-ratio: 16 / 9) {
+  .hero-video { width: 177.78vh; height: 100vh; }
+}
+/* Mobile: rotate the video 90° to fill the portrait screen vertically. */
+@media (max-width: 767px) {
+  .hero-video {
+    transform: translate(-50%, -50%) rotate(90deg);
+    width: max(100vh, 177.78vw);
+    height: max(56.25vh, 100vw);
+  }
+}
+
+/* Aegean wash hero gradient */
+.hero-aegean {
+  background:
+    linear-gradient(180deg, rgba(18, 58, 92, 0.05) 0%, rgba(18, 58, 92, 0) 40%),
+    radial-gradient(1200px 600px at 70% -10%, #dceaf0 0%, #fcfcfa 60%);
+}
