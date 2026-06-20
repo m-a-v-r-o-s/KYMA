@@ -121,6 +121,8 @@ body {
   transform: translate(-50%, -50%);
   width: 100vw;
   height: 100vh;
+  max-width: none; /* override Tailwind base img/video { max-width: 100% } */
+  max-height: none;
   border: 0;
   object-fit: cover;
   pointer-events: none;
