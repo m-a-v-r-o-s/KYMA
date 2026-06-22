@@ -66,19 +66,24 @@ export default function BookingWidget({ lang }: { lang: Lang }) {
   const [sending, setSending] = useState(false);
   const [paying, setPaying] = useState(false);
 
-  // build blocked nights from confirmed bookings + manual ranges
+  // build blocked nights from confirmed bookings + owner-blocked dates
   useEffect(() => {
     (async () => {
       const set = new Set<string>();
-      BLOCKED_RANGES.forEach((r) => expandNights(r.from, r.to).forEach((d) => set.add(d)));
       try {
-        const res = await fetch("/api/bookings", { cache: "no-store" });
-        const data = await res.json();
+        const [bRes, blkRes] = await Promise.all([
+          fetch("/api/bookings", { cache: "no-store" }),
+          fetch("/api/blocks", { cache: "no-store" }),
+        ]);
+        const data = await bRes.json();
+        const blk = await blkRes.json();
+        (blk.dates ?? []).forEach((d: string) => set.add(d));
         (data.bookings ?? [])
           .filter((b: any) => b.status === "confirmed")
           .forEach((b: any) => expandNights(b.checkIn, addDays(b.checkOut, -1)).forEach((d: string) => set.add(d)));
       } catch {
-        /* offline: just use manual ranges */
+        /* offline: fall back to the statically configured ranges */
+        BLOCKED_RANGES.forEach((r) => expandNights(r.from, r.to).forEach((d) => set.add(d)));
       }
       setBlocked(set);
     })();

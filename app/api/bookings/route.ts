@@ -24,16 +24,13 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  const body = (await req.json()) as Partial<NewBooking>;
-  if (
-    !body.checkIn ||
-    !body.checkOut ||
-    !body.name ||
-    !body.email ||
-    !body.phone
-  ) {
+  const body = (await req.json()) as Partial<NewBooking> & { status?: string };
+  // Email is optional so the owner can record phone bookings without one.
+  if (!body.checkIn || !body.checkOut || !body.name || !body.phone) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
   }
+  // Owner-entered bookings may be created already-confirmed; guest requests stay pending.
+  const status = body.status === "confirmed" ? "confirmed" : "pending";
 
   const guests = Math.max(VILLA.guestsMin, body.guests || VILLA.guestsMin);
   const nights = Math.max(1, nightsBetween(body.checkIn, body.checkOut));
@@ -49,19 +46,22 @@ export async function POST(req: Request) {
     housekeepingCost(nights, housekeeping) +
     chefDinners * chefDinnerPrice(guests);
 
-  const bkg = addBooking({
-    checkIn: body.checkIn,
-    checkOut: body.checkOut,
-    guests,
-    nights,
-    total,
-    name: body.name,
-    email: body.email,
-    phone: body.phone,
-    message: body.message || "",
-    housekeeping,
-    chef,
-    chefDates,
-  });
+  const bkg = addBooking(
+    {
+      checkIn: body.checkIn,
+      checkOut: body.checkOut,
+      guests,
+      nights,
+      total,
+      name: body.name,
+      email: body.email || "",
+      phone: body.phone,
+      message: body.message || "",
+      housekeeping,
+      chef,
+      chefDates,
+    },
+    status
+  );
   return NextResponse.json({ booking: bkg }, { status: 201 });
 }

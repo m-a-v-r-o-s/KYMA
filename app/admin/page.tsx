@@ -1,7 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { Booking, BookingStatus } from "@/lib/types";
+import AdminCalendar from "@/components/AdminCalendar";
+import BookingDetailsModal from "@/components/BookingDetailsModal";
+import AddBookingModal from "@/components/AddBookingModal";
 
 const PW = process.env.NEXT_PUBLIC_ADMIN_PASSWORD || "kyma2025";
 
@@ -34,15 +37,36 @@ export default function AdminPage() {
   const [authed, setAuthed] = useState(false);
   const [pw, setPw] = useState("");
   const [items, setItems] = useState<Booking[]>([]);
+  const [blockedDates, setBlockedDates] = useState<string[]>([]);
   const [filter, setFilter] = useState<"all" | BookingStatus>("all");
+  const [query, setQuery] = useState("");
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [adding, setAdding] = useState(false);
   const [loading, setLoading] = useState(false);
 
   async function load() {
     setLoading(true);
-    const res = await fetch("/api/bookings", { cache: "no-store" });
-    const data = await res.json();
+    const [bRes, blkRes] = await Promise.all([
+      fetch("/api/bookings", { cache: "no-store" }),
+      fetch("/api/blocks", { cache: "no-store" }),
+    ]);
+    const data = await bRes.json();
+    const blk = await blkRes.json();
     setItems(data.bookings ?? []);
+    setBlockedDates(blk.dates ?? []);
     setLoading(false);
+  }
+
+  async function toggleBlock(date: string, block: boolean) {
+    // optimistic update, then persist
+    setBlockedDates((prev) =>
+      block ? [...prev, date].sort() : prev.filter((d) => d !== date)
+    );
+    await fetch("/api/blocks", {
+      method: block ? "POST" : "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ date }),
+    });
   }
 
   useEffect(() => {
@@ -57,6 +81,23 @@ export default function AdminPage() {
       body: JSON.stringify({ status }),
     });
   }
+
+  // Match against name, email, or phone. Phone is compared digits-only so that
+  // spaces, "+", and other separators don't get in the way. Declared before the
+  // auth gate below so the hook order stays stable across renders.
+  const searched = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return items;
+    const qDigits = q.replace(/\D/g, "");
+    return items.filter((b) => {
+      const phoneDigits = b.phone.replace(/\D/g, "");
+      return (
+        b.name.toLowerCase().includes(q) ||
+        b.email.toLowerCase().includes(q) ||
+        (qDigits.length > 0 && phoneDigits.includes(qDigits))
+      );
+    });
+  }, [items, query]);
 
   if (!authed) {
     return (
@@ -84,29 +125,97 @@ export default function AdminPage() {
     );
   }
 
-  const shown = items.filter((b) => filter === "all" || b.status === filter);
+  // look the selected booking up live so the modal reflects status changes
+  const selected = selectedId ? items.find((b) => b.id === selectedId) ?? null : null;
+
+  const shown = searched.filter((b) => filter === "all" || b.status === filter);
   const counts = {
-    all: items.length,
-    pending: items.filter((b) => b.status === "pending").length,
-    confirmed: items.filter((b) => b.status === "confirmed").length,
-    cancelled: items.filter((b) => b.status === "cancelled").length,
+    all: searched.length,
+    pending: searched.filter((b) => b.status === "pending").length,
+    confirmed: searched.filter((b) => b.status === "confirmed").length,
+    cancelled: searched.filter((b) => b.status === "cancelled").length,
   };
 
   return (
-    <div className="min-h-screen bg-whitewash">
+    <div
+      className="min-h-screen bg-whitewash"
+      onClick={(e) => {
+        // Clicking blank / non-interactive space clears the active selection
+        // (the guest filled into the search box, e.g. from tapping a day).
+        const t = e.target as HTMLElement;
+        if (query && !t.closest("button, a, input, select, textarea, label, table")) {
+          setQuery("");
+        }
+      }}
+    >
       <header className="border-b border-ink/10 bg-white">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-5 py-4">
           <div>
             <p className="font-display text-2xl text-aegean-dark">Villa Kyma · Bookings</p>
             <p className="text-xs text-ink/50">Confirmed stays block the public calendar</p>
           </div>
-          <button onClick={load} className="rounded-full border border-aegean px-4 py-2 text-sm font-semibold text-aegean hover:bg-aegean hover:text-white">
-            {loading ? "…" : "Refresh"}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setAdding(true)}
+              className="inline-flex items-center gap-1.5 rounded-full bg-aegean px-4 py-2 text-sm font-semibold text-white transition hover:bg-aegean-dark"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden><path d="M12 5v14M5 12h14" strokeLinecap="round" /></svg>
+              Add booking
+            </button>
+            <button onClick={load} className="rounded-full border border-aegean px-4 py-2 text-sm font-semibold text-aegean hover:bg-aegean hover:text-white">
+              {loading ? "…" : "Refresh"}
+            </button>
+          </div>
         </div>
       </header>
 
       <main className="mx-auto max-w-5xl px-5 py-8">
+        {/* availability overview */}
+        <div className="mb-6">
+          <h2 className="mb-3 font-display text-lg text-aegean-dark">Availability</h2>
+          <AdminCalendar
+            bookings={items}
+            blockedDates={blockedDates}
+            onSelectName={(name) => setQuery(name)}
+            onToggleBlock={toggleBlock}
+          />
+        </div>
+
+        {/* search by guest name, email, or phone */}
+        <div className="mb-5">
+          <h2 className="mb-3 font-display text-lg text-aegean-dark">Bookings</h2>
+          <div className="relative">
+            <svg
+              className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-ink/35"
+              width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+              aria-hidden
+            >
+              <circle cx="11" cy="11" r="7" /><path d="M21 21l-4.3-4.3" strokeLinecap="round" />
+            </svg>
+            <input
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search past or active bookings by name, email, or phone…"
+              className="w-full rounded-full border border-ink/15 bg-white py-2.5 pl-11 pr-10 text-sm outline-none transition focus:border-aegean focus:ring-2 focus:ring-aegean/20"
+            />
+            {query && (
+              <button
+                onClick={() => setQuery("")}
+                aria-label="Clear search"
+                className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-ink/40 transition hover:bg-ink/5 hover:text-ink/70"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" strokeLinecap="round" /></svg>
+              </button>
+            )}
+          </div>
+          {query && (
+            <p className="mt-2 text-xs text-ink/50">
+              {searched.length} {searched.length === 1 ? "match" : "matches"} for “{query.trim()}”
+            </p>
+          )}
+        </div>
+
         <div className="mb-5 flex flex-wrap gap-2">
           {(["all", "pending", "confirmed", "cancelled"] as const).map((f) => (
             <button
@@ -141,7 +250,12 @@ export default function AdminPage() {
                     <span className="block text-ink/50">→ {b.checkOut}</span>
                   </td>
                   <td className="px-4 py-3">
-                    {b.name}
+                    <button
+                      onClick={() => setSelectedId(b.id)}
+                      className="text-left font-medium text-aegean hover:underline"
+                    >
+                      {b.name}
+                    </button>
                     <span className="block text-ink/55">{b.phone}</span>
                     <span className="block text-ink/45">{b.email}</span>
                     {b.message && <span className="mt-1 block text-xs italic text-ink/45">“{b.message}”</span>}
@@ -177,7 +291,9 @@ export default function AdminPage() {
               {shown.length === 0 && (
                 <tr>
                   <td colSpan={6} className="px-4 py-12 text-center text-ink/50">
-                    No booking requests here yet. Submit one from the homepage to see it appear.
+                    {query.trim()
+                      ? `No bookings match “${query.trim()}”. Try a different name, email, or phone number.`
+                      : "No booking requests here yet. Submit one from the homepage to see it appear."}
                   </td>
                 </tr>
               )}
@@ -188,6 +304,24 @@ export default function AdminPage() {
           Demo: data is temporary (server memory) and resets on every restart.
         </p>
       </main>
+
+      {selected && (
+        <BookingDetailsModal
+          booking={selected}
+          onClose={() => setSelectedId(null)}
+          onStatus={setStatus}
+        />
+      )}
+
+      {adding && (
+        <AddBookingModal
+          onClose={() => setAdding(false)}
+          onCreated={() => {
+            setAdding(false);
+            load();
+          }}
+        />
+      )}
     </div>
   );
 }
