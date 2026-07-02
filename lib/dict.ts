@@ -233,11 +233,25 @@ export const t: Dict = {
   },
 
   cookie_text: {
-    en: "We use cookies to improve your experience and analyse traffic.",
-    el: "Χρησιμοποιούμε cookies για καλύτερη εμπειρία και ανάλυση επισκεψιμότητας.",
+    en: "This site uses necessary cookies to function. With your consent, optional cookies like analytics help me improve it. You're in control: accept, reject, or manage preferences.",
+    el: "Αυτός ο ιστότοπος χρησιμοποιεί απαραίτητα cookies για να λειτουργεί. Με τη συγκατάθεσή σου, προαιρετικά cookies όπως analytics με βοηθούν να τον βελτιώσω. Έχεις τον έλεγχο: αποδοχή, απόρριψη ή διαχείριση προτιμήσεων.",
   },
-  cookie_accept: { en: "Accept", el: "Αποδοχή" },
-  cookie_deny: { en: "Decline", el: "Άρνηση" },
+  cookie_accept_all: { en: "Accept all", el: "Αποδοχή όλων" },
+  cookie_reject: { en: "Reject all", el: "Απόρριψη όλων" },
+  cookie_manage: { en: "Manage preferences", el: "Διαχείριση προτιμήσεων" },
+  cookie_save: { en: "Save preferences", el: "Αποθήκευση προτιμήσεων" },
+  cookie_prefs_title: { en: "Cookie preferences", el: "Προτιμήσεις cookies" },
+  cookie_necessary_title: { en: "Strictly necessary", el: "Απολύτως απαραίτητα" },
+  cookie_necessary_always: { en: "Always active", el: "Πάντα ενεργά" },
+  cookie_necessary_desc: {
+    en: "Needed for the site to work, such as security and saving this choice.",
+    el: "Απαραίτητα για τη λειτουργία του ιστότοπου, όπως ασφάλεια και η αποθήκευση αυτής της επιλογής.",
+  },
+  cookie_analytics_title: { en: "Analytics", el: "Analytics" },
+  cookie_analytics_desc: {
+    en: "Anonymous statistics that help me understand how the site is used.",
+    el: "Ανώνυμα στατιστικά που με βοηθούν να καταλάβω πώς χρησιμοποιείται ο ιστότοπος.",
+  },
 };
 
 export function tr(key: keyof typeof t, lang: Lang): string {
