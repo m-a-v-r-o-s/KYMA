@@ -231,6 +231,9 @@ export default function AdminPage() {
         </div>
 
         <div className="overflow-hidden rounded-2xl border border-ink/10 bg-white">
+          {/* horizontal scroll container: long guest emails/names must not clip
+              or force the whole page to overflow on narrow screens */}
+          <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead className="bg-aegean-wash/60 text-xs uppercase tracking-wide text-aegean-dark">
               <tr>
@@ -291,7 +294,9 @@ export default function AdminPage() {
               {shown.length === 0 && (
                 <tr>
                   <td colSpan={6} className="px-4 py-12 text-center text-ink/50">
-                    {query.trim()
+                    {loading
+                      ? "Loading bookings…"
+                      : query.trim()
                       ? `No bookings match “${query.trim()}”. Try a different name, email, or phone number.`
                       : "No booking requests here yet. Submit one from the homepage to see it appear."}
                   </td>
@@ -299,6 +304,7 @@ export default function AdminPage() {
               )}
             </tbody>
           </table>
+          </div>
         </div>
         <p className="mt-4 text-xs text-ink/40">
           Demo: data is temporary (server memory) and resets on every restart.

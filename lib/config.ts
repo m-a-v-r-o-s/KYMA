@@ -1,3 +1,7 @@
+// Public site URL, used for metadata, robots.txt and sitemap.xml. Set
+// NEXT_PUBLIC_SITE_URL once the real domain is live.
+export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://villakyma.gr";
+
 // Edit these before going live.
 export const VILLA = {
   name: "Villa Kyma",

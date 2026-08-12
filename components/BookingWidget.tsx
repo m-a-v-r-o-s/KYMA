@@ -39,6 +39,9 @@ function expandNights(from: string, to: string): string[] {
   return out;
 }
 
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const phoneDigits = (s: string) => s.replace(/\D/g, "").length;
+
 const MONTHS = {
   en: ["January","February","March","April","May","June","July","August","September","October","November","December"],
   el: ["Ιανουάριος","Φεβρουάριος","Μάρτιος","Απρίλιος","Μάιος","Ιούνιος","Ιούλιος","Αύγουστος","Σεπτέμβριος","Οκτώβριος","Νοέμβριος","Δεκέμβριος"],
@@ -47,6 +50,7 @@ const DOW = { en: ["Mo","Tu","We","Th","Fr","Sa","Su"], el: ["Δε","Τρ","Τε
 
 export default function BookingWidget({ lang }: { lang: Lang }) {
   const [blocked, setBlocked] = useState<Set<string>>(new Set());
+  const [calLoading, setCalLoading] = useState(true);
   const [view, setView] = useState(() => {
     const n = new Date();
     return { y: n.getFullYear(), m: n.getMonth() };
@@ -62,6 +66,7 @@ export default function BookingWidget({ lang }: { lang: Lang }) {
   const [phone, setPhone] = useState("");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [fieldErr, setFieldErr] = useState<{ name?: boolean; email?: boolean; phone?: boolean }>({});
   const [done, setDone] = useState(false);
   const [sending, setSending] = useState(false);
   const [paying, setPaying] = useState(false);
@@ -86,6 +91,7 @@ export default function BookingWidget({ lang }: { lang: Lang }) {
         BLOCKED_RANGES.forEach((r) => expandNights(r.from, r.to).forEach((d) => set.add(d)));
       }
       setBlocked(set);
+      setCalLoading(false);
     })();
   }, []);
 
@@ -173,12 +179,31 @@ export default function BookingWidget({ lang }: { lang: Lang }) {
     return checkIn && checkOut && d > checkIn && d < checkOut;
   }
 
-  async function submit() {
-    if (!checkIn || !checkOut || !name.trim() || !email.trim() || !phone.trim()) {
-      setError(tr("f_required", lang));
-      return;
+  // Shared client-side validation for both the "request" and "pay" paths.
+  // Returns true when valid; otherwise sets fieldErr/error and returns false.
+  function validate(): boolean {
+    const errs: typeof fieldErr = {};
+    if (!name.trim()) errs.name = true;
+    if (!EMAIL_RE.test(email.trim())) errs.email = true;
+    if (phoneDigits(phone) < 7) errs.phone = true;
+    setFieldErr(errs);
+
+    if (!checkIn || !checkOut || Object.keys(errs).length > 0) {
+      if (errs.email && !errs.name && !errs.phone && checkIn && checkOut) {
+        setError(tr("f_invalid_email", lang));
+      } else if (errs.phone && !errs.name && !errs.email && checkIn && checkOut) {
+        setError(tr("f_invalid_phone", lang));
+      } else {
+        setError(tr("f_required", lang));
+      }
+      return false;
     }
     setError("");
+    return true;
+  }
+
+  async function submit() {
+    if (!validate()) return;
     setSending(true);
     try {
       const res = await fetch("/api/bookings", {
@@ -196,11 +221,7 @@ export default function BookingWidget({ lang }: { lang: Lang }) {
   }
 
   async function payNow() {
-    if (!checkIn || !checkOut || !name.trim() || !email.trim() || !phone.trim()) {
-      setError(tr("f_required", lang));
-      return;
-    }
-    setError("");
+    if (!validate()) return;
     setPaying(true);
     try {
       const res = await fetch("/api/checkout", {
@@ -241,6 +262,7 @@ export default function BookingWidget({ lang }: { lang: Lang }) {
 
   const field =
     "w-full rounded-lg border border-ink/15 bg-white px-3.5 py-2.5 text-ink outline-none transition focus:border-aegean focus:ring-2 focus:ring-aegean/20";
+  const fieldInvalid = "border-red-400 focus:border-red-500 focus:ring-red-200";
 
   return (
     <div className="rounded-2xl border border-ink/10 bg-white p-5 shadow-sm sm:p-6">
@@ -267,13 +289,13 @@ export default function BookingWidget({ lang }: { lang: Lang }) {
           <div key={d} className="py-1">{d}</div>
         ))}
       </div>
-      <div className="mt-1 grid grid-cols-7 gap-1">
+      <div className={["mt-1 grid grid-cols-7 gap-1 transition-opacity", calLoading ? "animate-pulse opacity-50" : ""].join(" ")}>
         {grid.map((cell, i) => {
           if (!cell) return <div key={i} />;
           const day = Number(cell.slice(-2));
           const past = cell < todayStr;
           const isBlocked = blocked.has(cell);
-          const disabled = past || isBlocked;
+          const disabled = past || isBlocked || calLoading;
           const isStart = cell === checkIn;
           const isEnd = cell === checkOut;
           const between = inRange(cell);
@@ -284,7 +306,7 @@ export default function BookingWidget({ lang }: { lang: Lang }) {
               disabled={disabled}
               className={[
                 "aspect-square rounded-lg text-sm transition",
-                disabled ? "cursor-not-allowed text-ink/25 line-through" : "hover:bg-aegean-wash",
+                past || isBlocked ? "cursor-not-allowed text-ink/25 line-through" : calLoading ? "cursor-not-allowed text-ink/70" : "hover:bg-aegean-wash",
                 isStart || isEnd ? "bg-aegean text-white hover:bg-aegean" : "",
                 between ? "bg-aegean-wash text-aegean-dark" : "",
               ].join(" ")}
@@ -294,6 +316,7 @@ export default function BookingWidget({ lang }: { lang: Lang }) {
           );
         })}
       </div>
+      {calLoading && <p className="mt-2 text-xs text-ink/45">{tr("cal_loading", lang)}</p>}
 
       {/* selection summary */}
       <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
@@ -430,15 +453,42 @@ export default function BookingWidget({ lang }: { lang: Lang }) {
       {/* guest details — suppressHydrationWarning: password-manager extensions
           inject autofill styles/attributes into inputs before React hydrates */}
       <div className="mt-4 grid gap-3">
-        <input suppressHydrationWarning className={field} placeholder={tr("f_name", lang)} value={name} onChange={(e) => setName(e.target.value)} />
+        <input
+          suppressHydrationWarning
+          className={[field, fieldErr.name ? fieldInvalid : ""].join(" ")}
+          placeholder={tr("f_name", lang)}
+          value={name}
+          onChange={(e) => { setName(e.target.value); setFieldErr((f) => ({ ...f, name: false })); }}
+          aria-invalid={fieldErr.name || undefined}
+          required
+        />
         <div className="grid gap-3 sm:grid-cols-2">
-          <input suppressHydrationWarning className={field} type="email" placeholder={tr("f_email", lang)} value={email} onChange={(e) => setEmail(e.target.value)} />
-          <input suppressHydrationWarning className={field} inputMode="tel" placeholder={tr("f_phone", lang)} value={phone} onChange={(e) => setPhone(e.target.value)} />
+          <input
+            suppressHydrationWarning
+            className={[field, fieldErr.email ? fieldInvalid : ""].join(" ")}
+            type="email"
+            placeholder={tr("f_email", lang)}
+            value={email}
+            onChange={(e) => { setEmail(e.target.value); setFieldErr((f) => ({ ...f, email: false })); }}
+            aria-invalid={fieldErr.email || undefined}
+            required
+          />
+          <input
+            suppressHydrationWarning
+            className={[field, fieldErr.phone ? fieldInvalid : ""].join(" ")}
+            inputMode="tel"
+            type="tel"
+            placeholder={tr("f_phone", lang)}
+            value={phone}
+            onChange={(e) => { setPhone(e.target.value); setFieldErr((f) => ({ ...f, phone: false })); }}
+            aria-invalid={fieldErr.phone || undefined}
+            required
+          />
         </div>
         <textarea suppressHydrationWarning className={field} rows={2} placeholder={tr("f_message", lang)} value={message} onChange={(e) => setMessage(e.target.value)} />
       </div>
 
-      {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
+      {error && <p className="mt-3 text-sm text-red-600" role="alert">{error}</p>}
 
       <button
         onClick={payNow}

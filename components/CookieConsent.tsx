@@ -79,7 +79,12 @@ export default function CookieConsent({ lang }: { lang: Lang }) {
       <div className="mx-auto max-w-container rounded-2xl border border-ink/10 bg-white/95 p-4 shadow-lg shadow-black/10 backdrop-blur sm:p-5">
         {view === "banner" ? (
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
-            <p className="text-sm text-ink/75">{tr("cookie_text", lang)}</p>
+            <p className="text-sm text-ink/75">
+              {tr("cookie_text", lang)}{" "}
+              <a href="/privacy" className="whitespace-nowrap font-semibold text-aegean hover:underline">
+                {tr("cookie_privacy_link", lang)}
+              </a>
+            </p>
             <div className="flex shrink-0 flex-wrap gap-2.5">
               <button onClick={() => setView("prefs")} className={btnGhost}>
                 {tr("cookie_manage", lang)}

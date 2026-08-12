@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Literata, Inter } from "next/font/google";
+import { SITE_URL } from "@/lib/config";
+import Analytics from "@/components/Analytics";
 import "./globals.css";
 
 const display = Literata({
@@ -15,10 +17,29 @@ const sans = Inter({
   display: "swap",
 });
 
+const TITLE = "Villa Kyma | Luxury seafront villa in Paros, Greece";
+const DESCRIPTION =
+  "Villa Kyma is a private seafront villa on Paros with infinity pool and Aegean views. Book direct and save on platform fees.";
+
 export const metadata: Metadata = {
-  title: "Villa Kyma | Luxury seafront villa in Paros, Greece",
-  description:
-    "Villa Kyma is a private seafront villa on Paros with infinity pool and Aegean views. Book direct and save on platform fees.",
+  metadataBase: new URL(SITE_URL),
+  title: { default: TITLE, template: "%s | Villa Kyma" },
+  description: DESCRIPTION,
+  openGraph: {
+    type: "website",
+    url: "/",
+    siteName: "Villa Kyma",
+    title: TITLE,
+    description: DESCRIPTION,
+    images: [
+      {
+        url: "/videos/hero-poster.jpg",
+        width: 1280,
+        height: 720,
+        alt: "Aerial view of Villa Kyma's seafront infinity pool on Paros, Greece",
+      },
+    ],
+  },
 };
 
 export default function RootLayout({
@@ -28,7 +49,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${display.variable} ${sans.variable}`}>
-      <body className="font-sans">{children}</body>
+      <body className="font-sans">
+        {children}
+        <Analytics />
+      </body>
     </html>
   );
 }

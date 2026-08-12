@@ -110,6 +110,10 @@ export default function AddBookingModal({
       setError("Guest name and phone number are required.");
       return;
     }
+    if (email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      setError("That email address doesn't look valid. Leave it blank if you don't have one.");
+      return;
+    }
     setError("");
     setSaving(true);
     try {

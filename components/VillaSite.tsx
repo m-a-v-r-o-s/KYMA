@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import { AMENITIES, AREA, EXPERIENCES, REVIEWS, noTonos, tr, type Lang } from "@/lib/dict";
 import { VILLA } from "@/lib/config";
 import BookingWidget from "./BookingWidget";
@@ -61,10 +62,15 @@ export default function VillaSite() {
   }, []);
 
   // Villa gallery: three real photos + empty placeholders revealed by "view more".
-  const gallery: { src?: string; empty?: boolean }[] = [
-    { src: img("kyma-1", 1100, 1400) },
-    { src: img("kyma-2", 1100, 760) },
-    { src: img("kyma-3", 1100, 760) },
+  const GALLERY_ALT: Record<Lang, string>[] = [
+    { en: "Villa Kyma's infinity pool overlooking the Aegean Sea", el: "Η πισίνα υπερχείλισης της Villa Kyma με θέα στο Αιγαίο" },
+    { en: "Bright, contemporary living room interior at Villa Kyma", el: "Φωτεινό, σύγχρονο σαλόνι στη Villa Kyma" },
+    { en: "Villa Kyma's pool terrace and outdoor lounge area", el: "Η βεράντα της πισίνας και ο εξωτερικός χώρος καθιστικού της Villa Kyma" },
+  ];
+  const gallery: { src?: string; w?: number; h?: number; empty?: boolean }[] = [
+    { src: img("kyma-1", 1100, 1400), w: 1100, h: 1400 },
+    { src: img("kyma-2", 1100, 760), w: 1100, h: 760 },
+    { src: img("kyma-3", 1100, 760), w: 1100, h: 760 },
     { empty: true },
     { empty: true },
     { empty: true },
@@ -197,14 +203,35 @@ export default function VillaSite() {
             </div>
             <div>
               <div className="grid grid-cols-2 gap-3">
-                <button onClick={() => setLightbox(0)} className="row-span-2 overflow-hidden rounded-2xl">
-                  <img src={gallery[0].src} alt="" className="h-full w-full cursor-pointer object-cover transition hover:opacity-90" />
+                <button onClick={() => setLightbox(0)} className="relative row-span-2 overflow-hidden rounded-2xl">
+                  <Image
+                    src={gallery[0].src!}
+                    alt={GALLERY_ALT[0][lang]}
+                    width={gallery[0].w}
+                    height={gallery[0].h}
+                    sizes="(min-width: 768px) 25vw, 50vw"
+                    className="h-full w-full cursor-pointer object-cover transition hover:opacity-90"
+                  />
                 </button>
-                <button onClick={() => setLightbox(1)} className="overflow-hidden rounded-2xl">
-                  <img src={gallery[1].src} alt="" className="w-full cursor-pointer object-cover transition hover:opacity-90" />
+                <button onClick={() => setLightbox(1)} className="relative overflow-hidden rounded-2xl">
+                  <Image
+                    src={gallery[1].src!}
+                    alt={GALLERY_ALT[1][lang]}
+                    width={gallery[1].w}
+                    height={gallery[1].h}
+                    sizes="(min-width: 768px) 25vw, 50vw"
+                    className="w-full cursor-pointer object-cover transition hover:opacity-90"
+                  />
                 </button>
-                <button onClick={() => setLightbox(2)} className="overflow-hidden rounded-2xl">
-                  <img src={gallery[2].src} alt="" className="w-full cursor-pointer object-cover transition hover:opacity-90" />
+                <button onClick={() => setLightbox(2)} className="relative overflow-hidden rounded-2xl">
+                  <Image
+                    src={gallery[2].src!}
+                    alt={GALLERY_ALT[2][lang]}
+                    width={gallery[2].w}
+                    height={gallery[2].h}
+                    sizes="(min-width: 768px) 25vw, 50vw"
+                    className="w-full cursor-pointer object-cover transition hover:opacity-90"
+                  />
                 </button>
               </div>
 
@@ -264,7 +291,14 @@ export default function VillaSite() {
           <div className="mt-9 grid gap-6 md:grid-cols-3">
             {AREA.map((p, i) => (
               <article key={i} className="overflow-hidden rounded-2xl border border-ink/8 bg-white">
-                <img src={img(`kyma-area-${i}`, 700, 480)} alt="" className="aspect-[3/2] w-full object-cover" />
+                <Image
+                  src={img(`kyma-area-${i}`, 700, 480)}
+                  alt={lang === "en" ? p.imgAltEn : p.imgAltEl}
+                  width={700}
+                  height={480}
+                  sizes="(min-width: 768px) 33vw, 100vw"
+                  className="aspect-[3/2] w-full object-cover"
+                />
                 <div className="p-5">
                   <h3 className="font-display text-2xl text-aegean-dark">{p[lang]}</h3>
                   <p className="mt-1.5 text-sm text-ink/65">{lang === "en" ? p.descEn : p.descEl}</p>
@@ -283,9 +317,12 @@ export default function VillaSite() {
               {EXPERIENCES.map((e) => (
                 <article key={e.key} className="group flex flex-col overflow-hidden rounded-2xl border border-ink/8 bg-white">
                   <div className="relative aspect-[3/2] overflow-hidden">
-                    <img
+                    <Image
                       src={img(`exp-${e.key}`, 700, 480)}
-                      alt=""
+                      alt={lang === "en" ? e.imgAltEn : e.imgAltEl}
+                      width={700}
+                      height={480}
+                      sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
                       className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
                     />
                   </div>
@@ -372,6 +409,13 @@ export default function VillaSite() {
           </div>
           <div className="text-sm sm:text-right">
             <p>{tr("footer_ama", lang)}: <span className="font-mono">{VILLA.ama}</span></p>
+            <p className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-white/70 sm:justify-end">
+              <a href="#villa" className="hover:text-white">{tr("nav_villa", lang)}</a>
+              <a href="#area" className="hover:text-white">{tr("nav_area", lang)}</a>
+              <a href="#experiences" className="hover:text-white">{tr("nav_experiences", lang)}</a>
+              <a href="/privacy" className="hover:text-white">{tr("footer_privacy", lang)}</a>
+              <a href="/terms" className="hover:text-white">{tr("footer_terms", lang)}</a>
+            </p>
             <p className="mt-2 text-white/55">© {new Date().getFullYear()} Villa Kyma. {tr("footer_rights", lang)}</p>
             <p className="mt-1 text-xs text-white/40">{tr("footer_demo", lang)}</p>
           </div>
@@ -405,7 +449,14 @@ export default function VillaSite() {
                 <p className="text-sm">{tr("gallery_soon", lang)}</p>
               </div>
             ) : (
-              <img src={gallery[lightbox].src} alt="" className="max-h-[88vh] max-w-[92vw] rounded-xl object-contain" />
+              // Plain <img>, not next/image: this full-viewport preview has no fixed
+              // aspect ratio (object-contain against max-h/max-w), only opens on
+              // demand, and isn't part of the initial page weight.
+              <img
+                src={gallery[lightbox].src}
+                alt={GALLERY_ALT[lightbox]?.[lang] ?? ""}
+                className="max-h-[88vh] max-w-[92vw] rounded-xl object-contain"
+              />
             )}
           </div>
           <button
