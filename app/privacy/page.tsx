@@ -19,12 +19,6 @@ export default function PrivacyPage() {
         &larr; Back to Villa Kyma
       </a>
 
-      <div className="mt-6 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
-        <strong>Template notice:</strong> this is a reasonable starting draft, not legal advice.
-        Have a qualified lawyer review it against Greek and EU law (including the GDPR) before
-        relying on it in production.
-      </div>
-
       <h1 className="mt-8 font-display text-4xl text-aegean-dark">Privacy Policy</h1>
       <p className="mt-2 text-sm text-ink/50">Last updated: {updated}</p>
 
